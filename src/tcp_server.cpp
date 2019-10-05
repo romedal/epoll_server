@@ -3,7 +3,7 @@
 // Author      : romedal
 // Version     :
 // Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
+// Description : TCP server C++, Ansi-style
 //============================================================================
 
 #include <iostream>
@@ -14,11 +14,12 @@ using namespace std;
 int main() {
 	Server* srv = new Server();
 	srv->create_server();
-	srv->make_socket_non_blocking();
+//	srv->csv_create();
+	srv->make_socket_non_blocking(srv->socket_fd);
 	srv->start_listen();
-	for(;;){
-
-	}
+	srv->create_multiplex();
+	srv->set_multiplex();
+	srv->start_multiplex();
 
 	delete srv;
 	return 0;
