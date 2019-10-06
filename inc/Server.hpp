@@ -28,9 +28,13 @@ using namespace std;
 #include <vector>
 #include <algorithm>
 #include <cstring>
-#include "csv.hpp"
+#include "Csv.hpp"
 
 class Server {
+
+public:
+	int socket_fd;
+	Csv* csvTool;
 private:
 	int epoll_fd;
 	int event_count;
@@ -40,7 +44,6 @@ private:
 	char read_buffer[READ_SIZE + 1];
 
 public:
-	int socket_fd;
 	Server();
 	virtual ~Server();
 	bool create_server();
@@ -51,9 +54,8 @@ public:
 	bool set_multiplex();
 	void start_multiplex();
 
-	bool csv_create(char** arr, int fd);
-	bool csv_create(int c1, float c2, int c3, int fd);
-	bool sort_csv(int fd);
+
+	void sort_csv(int fd);
 
 private:
 	void process_new_data(int fd);

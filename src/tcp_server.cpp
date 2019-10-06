@@ -13,7 +13,6 @@ using namespace std;
 int main() {
 	Server* srv = new Server();
 	srv->create_server();
-//	srv->csv_create();
 	srv->make_socket_non_blocking(srv->socket_fd);
 	srv->start_listen();
 	srv->create_multiplex();

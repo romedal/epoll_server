@@ -16,15 +16,14 @@
 #include <map>
 #include <cstdlib>
 
-Server::Server(): epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}, socket_fd{0}
+Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}
 {
-	cout<<"server creating ..."<<endl;
+	csvTool = new Csv();
 	memset(&event, 0x00, sizeof(struct epoll_event));
 	memset(events, 0x00, sizeof(events));
 	memset(read_buffer, 0x00, sizeof(read_buffer));
 	event.events = EPOLLIN;
 	event.data.fd = 0;
-	cout<<"server was created"<<endl;
 }
 
 Server::~Server()
@@ -77,15 +76,12 @@ void Server::start_multiplex()
 		for (i = 0; i < n; i++) {
 			if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
 			    !(events[i].events & EPOLLIN)) {
-				/* An error on this fd or socket not ready */
 				perror("epoll error");
 				close(events[i].data.fd);
 			} else if (events[i].data.fd == socket_fd) {
-				/* New incoming connection */
 				accept_and_add_new();
 			} else {
-				/* Data incoming on fd */
-				create_headers_csv(events[i].data.fd, 0);
+				csvTool->create_headers_csv(events[i].data.fd, 0);
 				process_new_data(events[i].data.fd);
 			}
 		}
@@ -117,7 +113,6 @@ bool Server::create_server()
 		perror("Unable to bind");
 		exit(1);
 	}
-	cout<<"ret - "<<ret<<endl;
 
 	return EXIT_SUCCESS;
 }
@@ -159,8 +154,6 @@ void Server::process_new_data(int fd)
 {
 	ssize_t count;
 	char buf[512]={0};
-	int c1=0, c3=0;
-	float c2=0;
 	string str={0};
 
 	while ((count = read(fd, buf, sizeof(buf) - 1))) {
@@ -176,7 +169,6 @@ void Server::process_new_data(int fd)
 		str.assign(buf);
 		cout<<"this is "<<str<<endl;
 		split1(buf, fd);
-//		printf("%s \n", buf);
 	}
 	printf("Close connection on descriptor: %d\n", fd);
 	this->sort_csv(fd);
@@ -196,9 +188,6 @@ void Server::accept_and_add_new()
 		if (getnameinfo(&in_addr, in_len, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICHOST) == 0) {
 			printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", infd, hbuf, sbuf);
 		}
-		/* Make the incoming socket non-block
-		 * and add it to list of fds to
-		 * monitor*/
 		if (make_socket_non_blocking(infd) == -1) {
 			abort();
 		}
@@ -216,83 +205,30 @@ void Server::accept_and_add_new()
 		perror("accept error");
 }
 
-bool Server::csv_create(char** arr, int fd)
-{
-	// file pointer
-	fstream fout;
-	char name[10];
-	sprintf(name, "connection%d.csv", fd);
-	// opens an existing csv file or creates a new file.
-//	if(!fout.is_open())
-//	{
-//
-//	}
-	fout.open(name, ios::out | ios::app);
-
-//	cout<<"Enter the details of 5 students:"<<" roll name maths phy chem bio"<< endl;
-
-//	int i, roll, phy, chem, math, bio;
-//	string name;
-
-	fout <<arr[0] << ","
-			<< arr[1] << ","
-			<< arr[2] << ","
-			<< "\r\n";
-
-	fout.close();
-	return 0;
-}
-
-bool Server::csv_create(int c1, float c2, int c3, int fd)
-{
-	fstream fout;
-	char name[10];
-	sprintf(name, "connection%d_sorted.csv", fd);
-	fout.open(name, ios::out | ios::app);
-
-	fout <<c1<< ","
-			<<c2<< ","
-			<<c3<< ","
-			<< "\r\n";
-	fout.close();
-	return 0;
-}
-
-
-bool Server::sort_csv(int fd)
+void Server::sort_csv(int fd)
 {
 	char name[10];
 	sprintf(name, "connection%d.csv", fd);
 	char delim =',';
 	std::string orbits="";
 	std::string::size_type sz;
-
-	cout<<"sorting "<<name<<endl;
-	// File pointer
 	fstream fin;
 
-	// Open an existing file
 	fin.open(name, ios::in);
 	vector<string> row;
 	string line, word, temp;
 	vector<string> words;
 	vector<tuple<int, float, int>> wideVector;
 	int C1=0; float C2=0; int C3=0;
-	//	map<float, vector<int, int>> bigMap;
 
 	while (fin >> temp) {
 		row.clear();
-		// read an entire row and
-		// store it in a string variable 'line'
 		getline(fin, line);
-		// used for breaking words
-		//		cout << "line: "<<line<< "\n";
 		stringstream s(line);
 
 
 		// read every column data of a row and
 		// store it in a string variable, 'word'
-		char delim = ','; // Ddefine the delimiter to split by
 		while (std::getline(fin, line, delim)) {
 			// Provide proper checks here for tmp like if empty
 			// Also strip down symbols like !, ., ?, etc.
@@ -302,9 +238,6 @@ bool Server::sort_csv(int fd)
 		}
 	}
 	int r = 1;
-	std::cout<<"size -"<<words.size()<<std::endl;
-	int size = words.size() - 1;
-	int init_size = 0;
 	//while(init_size < size){
 	for(auto it = words.begin(); it != words.end(); it++) {
 		//	cout<<"r "<<r<<endl;
@@ -333,23 +266,22 @@ bool Server::sort_csv(int fd)
 
 		}
 	}
-	//	init_size +=3;
-	//}
 	fin.close();
 
 	for ( const auto& i : wideVector ) {
 		cout <<"fucking tuple  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
 	}
 
-	create_headers_csv(fd, 1);
+	csvTool->create_headers_csv(fd, 1);
 	cout<<"after sorting"<<endl;
-	sort(wideVector.begin(), wideVector.end(), sortbysec);
+	sort(wideVector.begin(), wideVector.end(), Csv::sortbysec);
 	for ( const auto& i : wideVector ) {
-		this->csv_create(get<0>(i), get<1>(i), get<2>(i), fd);
+		csvTool->csv_create(get<0>(i), get<1>(i), get<2>(i), fd);
 		cout <<"fucking tuple  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
 	}
 
 	wideVector.clear();
+
 }
 
 
@@ -365,5 +297,5 @@ void Server::split1(char* input, int fd)
         token = std::strtok(NULL, " ");
         ++i;
     }
-    this->csv_create(arr, fd);
+    csvTool->csv_create(arr, fd);
 }
