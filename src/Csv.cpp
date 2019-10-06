@@ -9,20 +9,16 @@
 #include <unistd.h>
 #include <vector>
 #include <tuple>
+#include <algorithm>
 
-Csv::Csv()
+Csv::Csv():csv_fd{0}
 {
-
+	cout<<"creating csv tool ..."<<endl;
 }
 
 Csv::~Csv()
 {
-//	cout<<"server destroying ..."<<endl;
-//	if(close(epoll_fd))
-//	{
-//		fprintf(stderr, "Failed to close epoll file descriptor\n");
-//	}
-//	cout<<"server was destroyed"<<endl;
+	cout<<"csv tool was destroyed"<<endl;
 }
 void Csv::create_headers_csv(int fd, int sorted)
 {
@@ -41,7 +37,7 @@ void Csv::create_headers_csv(int fd, int sorted)
 
 	fout <<"C1" << ","
 		 <<"C2" << ","
-		 <<"C3" << "\r\n";
+		 <<"C3" << "\n";
 	fout.close();
 }
 
@@ -62,7 +58,7 @@ bool Csv::csv_create(char** arr, int fd)
 	fout <<arr[0] << ","
 		 <<arr[1] << ","
 		 <<arr[2] << ","
-		 <<"\r\n";
+		 <<"\n";
 
 	fout.close();
 	return 0;
@@ -78,8 +74,74 @@ bool Csv::csv_create(int c1, float c2, int c3, int fd)
 	fout <<c1<< ","
 		 <<c2<< ","
 		 <<c3<< ","
-		 << "\r\n";
+		 << "\n";
 	fout.close();
 	return 0;
 
+}
+
+void Csv::sort_csv(int fd)
+{
+	float C2=0;
+	int rowNum = 1, C3 = 0, C1 = 0;;
+	char name[10] = {0}, delim =',';
+	std::string orbits="";
+	fstream fin;
+	vector<string> row, words;
+	string line, word, temp;
+	vector<tuple<int, float, int>> wideVector;
+
+	sprintf(name, "connection%d.csv", fd);
+	fin.open(name, ios::in);
+
+	while (fin >> temp) {
+		row.clear();
+		getline(fin, line);
+		stringstream s(line);
+
+		while (std::getline(fin, line, delim)) {
+			if(line != "")
+				words.push_back(line);
+		}
+	}
+	for(auto it = words.begin(); it != words.end(); it++) {
+		orbits.assign(*it);
+		orbits.erase(std::remove(orbits.begin(), orbits.end(), '\n'), orbits.end());
+		if(orbits != "")
+		{
+			if (rowNum == 3){
+				rowNum=1;
+				C3=stoi(orbits);
+				wideVector.push_back(std::make_tuple(C1, C2, C3));
+			}
+			else if (rowNum == 2){
+				C2=stof(orbits);
+				++rowNum;
+			}
+			else if (rowNum == 1){
+				C1=stoi(orbits);
+				++rowNum;
+			}
+		}
+	}
+
+	fin.close();
+
+#ifdef DEBUG
+	for ( const auto& i : wideVector ) {
+		cout <<"Tuple:  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
+	}
+#endif
+
+	this->create_headers_csv(fd, 1);
+	sort(wideVector.begin(), wideVector.end(), Csv::sortbysec);
+	for ( const auto& i : wideVector ) {
+		this->csv_create(get<0>(i), get<1>(i), get<2>(i), fd);
+#ifdef DEBUG
+		cout <<"Tuple:  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
+#endif
+
+	}
+
+	wideVector.clear();
 }

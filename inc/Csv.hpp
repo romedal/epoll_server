@@ -12,16 +12,16 @@ using namespace std;
 class Csv {
 private:
 
-	int socket_fd;
+	int csv_fd;
 public:
 	Csv();
 	virtual ~Csv();
-void create_headers_csv(int, int);
-bool csv_create(char** arr, int fd);
-bool csv_create(int c1, float c2, int c3, int fd);
-static bool sortbysec(const tuple<int, float, int>& a,
-               const tuple<int, float, int>& b);
-
+	void create_headers_csv(int, int);
+	void sort_csv(int fd);
+	bool csv_create(char** arr, int fd);
+	bool csv_create(int c1, float c2, int c3, int fd);
+	static bool sortbysec(const tuple<int, float, int>& a,
+			const tuple<int, float, int>& b);
 };
 
 #endif

@@ -54,9 +54,6 @@ public:
 	bool set_multiplex();
 	void start_multiplex();
 
-
-	void sort_csv(int fd);
-
 private:
 	void process_new_data(int fd);
 	void accept_and_add_new();

@@ -167,11 +167,10 @@ void Server::process_new_data(int fd)
 
 		buf[count] = '\0';
 		str.assign(buf);
-		cout<<"this is "<<str<<endl;
 		split1(buf, fd);
 	}
 	printf("Close connection on descriptor: %d\n", fd);
-	this->sort_csv(fd);
+	csvTool->sort_csv(fd);
 	close(fd);
 }
 
@@ -205,86 +204,6 @@ void Server::accept_and_add_new()
 		perror("accept error");
 }
 
-void Server::sort_csv(int fd)
-{
-	char name[10];
-	sprintf(name, "connection%d.csv", fd);
-	char delim =',';
-	std::string orbits="";
-	std::string::size_type sz;
-	fstream fin;
-
-	fin.open(name, ios::in);
-	vector<string> row;
-	string line, word, temp;
-	vector<string> words;
-	vector<tuple<int, float, int>> wideVector;
-	int C1=0; float C2=0; int C3=0;
-
-	while (fin >> temp) {
-		row.clear();
-		getline(fin, line);
-		stringstream s(line);
-
-
-		// read every column data of a row and
-		// store it in a string variable, 'word'
-		while (std::getline(fin, line, delim)) {
-			// Provide proper checks here for tmp like if empty
-			// Also strip down symbols like !, ., ?, etc.
-			// Finally push it.
-			if(line != "")
-				words.push_back(line);
-		}
-	}
-	int r = 1;
-	//while(init_size < size){
-	for(auto it = words.begin(); it != words.end(); it++) {
-		//	cout<<"r "<<r<<endl;
-		orbits.assign(*it);
-		orbits.erase(std::remove(orbits.begin(), orbits.end(), ' '), orbits.end());
-		orbits.erase(std::remove(orbits.begin(), orbits.end(), '\r'), orbits.end());
-		orbits.erase(std::remove(orbits.begin(), orbits.end(), '\n'), orbits.end());
-		if(orbits != "")
-		{
-			if (r == 3)
-			{
-				r=1;
-				C3=stoi(orbits);
-				wideVector.push_back(std::make_tuple(C1, C2, C3));
-			}else
-				if (r == 2)
-				{
-					C2=stof(orbits);
-					++r;
-				}else
-					if (r == 1)
-					{
-						C1=stoi(orbits);
-						++r;
-					}
-
-		}
-	}
-	fin.close();
-
-	for ( const auto& i : wideVector ) {
-		cout <<"fucking tuple  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
-	}
-
-	csvTool->create_headers_csv(fd, 1);
-	cout<<"after sorting"<<endl;
-	sort(wideVector.begin(), wideVector.end(), Csv::sortbysec);
-	for ( const auto& i : wideVector ) {
-		csvTool->csv_create(get<0>(i), get<1>(i), get<2>(i), fd);
-		cout <<"fucking tuple  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
-	}
-
-	wideVector.clear();
-
-}
-
-
 void Server::split1(char* input, int fd)
 {
     char* arr[3]={0};
@@ -292,7 +211,6 @@ void Server::split1(char* input, int fd)
 	char *token = std::strtok(input, " ");
 
     while (token != NULL) {
-        std::cout<<"my token " << token << '\n';
         arr[i]=token;
         token = std::strtok(NULL, " ");
         ++i;
