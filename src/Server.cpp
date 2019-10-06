@@ -6,6 +6,15 @@
  */
 
 #include "../inc/Server.hpp"
+#include <sstream>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <cctype>
+#include <ctype.h>
+#include <map>
+#include <cstdlib>
 
 Server::Server(): epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}, socket_fd{0}
 {
@@ -76,6 +85,7 @@ void Server::start_multiplex()
 				accept_and_add_new();
 			} else {
 				/* Data incoming on fd */
+				create_headers_csv(events[i].data.fd, 0);
 				process_new_data(events[i].data.fd);
 			}
 		}
@@ -164,11 +174,12 @@ void Server::process_new_data(int fd)
 
 		buf[count] = '\0';
 		str.assign(buf);
-		cout<<"this is"<<str<<endl;
+		cout<<"this is "<<str<<endl;
+		split1(buf, fd);
 //		printf("%s \n", buf);
 	}
-
 	printf("Close connection on descriptor: %d\n", fd);
+	this->sort_csv(fd);
 	close(fd);
 }
 
@@ -205,43 +216,154 @@ void Server::accept_and_add_new()
 		perror("accept error");
 }
 
-bool Server::csv_create()
+bool Server::csv_create(char** arr, int fd)
 {
-    // file pointer
-    fstream fout;
+	// file pointer
+	fstream fout;
+	char name[10];
+	sprintf(name, "connection%d.csv", fd);
+	// opens an existing csv file or creates a new file.
+//	if(!fout.is_open())
+//	{
+//
+//	}
+	fout.open(name, ios::out | ios::app);
 
-    // opens an existing csv file or creates a new file.
-    fout.open("reportcard.csv", ios::out | ios::app);
+//	cout<<"Enter the details of 5 students:"<<" roll name maths phy chem bio"<< endl;
 
-    cout<<"Enter the details of 5 students:"<<" roll name maths phy chem bio"<< endl;
+//	int i, roll, phy, chem, math, bio;
+//	string name;
 
-    int i, roll, phy, chem, math, bio;
-    string name;
+	fout <<arr[0] << ","
+			<< arr[1] << ","
+			<< arr[2] << ","
+			<< "\r\n";
 
-    // Read the input
-//    for (i = 0; i < 5; i++) {
-
-        cin >> roll
-            >> name
-            >> math
-            >> phy
-            >> chem
-            >> bio;
-
-        // Insert the data to file
-        fout << roll << ", "
-             << name << ", "
-             << math << ", "
-             << phy << ", "
-             << chem << ", "
-             << bio
-             << "\n";
-//    }
-    return 0;
+	fout.close();
+	return 0;
 }
 
-bool Server::sort_csv()
+bool Server::csv_create(int c1, float c2, int c3, int fd)
 {
+	fstream fout;
+	char name[10];
+	sprintf(name, "connection%d_sorted.csv", fd);
+	fout.open(name, ios::out | ios::app);
+
+	fout <<c1<< ","
+			<<c2<< ","
+			<<c3<< ","
+			<< "\r\n";
+	fout.close();
+	return 0;
+}
 
 
+bool Server::sort_csv(int fd)
+{
+	char name[10];
+	sprintf(name, "connection%d.csv", fd);
+	char delim =',';
+	std::string orbits="";
+	std::string::size_type sz;
+
+	cout<<"sorting "<<name<<endl;
+	// File pointer
+	fstream fin;
+
+	// Open an existing file
+	fin.open(name, ios::in);
+	vector<string> row;
+	string line, word, temp;
+	vector<string> words;
+	vector<tuple<int, float, int>> wideVector;
+	int C1=0; float C2=0; int C3=0;
+	//	map<float, vector<int, int>> bigMap;
+
+	while (fin >> temp) {
+		row.clear();
+		// read an entire row and
+		// store it in a string variable 'line'
+		getline(fin, line);
+		// used for breaking words
+		//		cout << "line: "<<line<< "\n";
+		stringstream s(line);
+
+
+		// read every column data of a row and
+		// store it in a string variable, 'word'
+		char delim = ','; // Ddefine the delimiter to split by
+		while (std::getline(fin, line, delim)) {
+			// Provide proper checks here for tmp like if empty
+			// Also strip down symbols like !, ., ?, etc.
+			// Finally push it.
+			if(line != "")
+				words.push_back(line);
+		}
+	}
+	int r = 1;
+	std::cout<<"size -"<<words.size()<<std::endl;
+	int size = words.size() - 1;
+	int init_size = 0;
+	//while(init_size < size){
+	for(auto it = words.begin(); it != words.end(); it++) {
+		//	cout<<"r "<<r<<endl;
+		orbits.assign(*it);
+		orbits.erase(std::remove(orbits.begin(), orbits.end(), ' '), orbits.end());
+		orbits.erase(std::remove(orbits.begin(), orbits.end(), '\r'), orbits.end());
+		orbits.erase(std::remove(orbits.begin(), orbits.end(), '\n'), orbits.end());
+		if(orbits != "")
+		{
+			if (r == 3)
+			{
+				r=1;
+				C3=stoi(orbits);
+				wideVector.push_back(std::make_tuple(C1, C2, C3));
+			}else
+				if (r == 2)
+				{
+					C2=stof(orbits);
+					++r;
+				}else
+					if (r == 1)
+					{
+						C1=stoi(orbits);
+						++r;
+					}
+
+		}
+	}
+	//	init_size +=3;
+	//}
+	fin.close();
+
+	for ( const auto& i : wideVector ) {
+		cout <<"fucking tuple  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
+	}
+
+	create_headers_csv(fd, 1);
+	cout<<"after sorting"<<endl;
+	sort(wideVector.begin(), wideVector.end(), sortbysec);
+	for ( const auto& i : wideVector ) {
+		this->csv_create(get<0>(i), get<1>(i), get<2>(i), fd);
+		cout <<"fucking tuple  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
+	}
+
+	wideVector.clear();
+}
+
+
+void Server::split1(char* input, int fd)
+{
+    char* arr[3]={0};
+    int i = 0;
+	char *token = std::strtok(input, " ");
+
+    while (token != NULL) {
+        std::cout<<"my token " << token << '\n';
+        arr[i]=token;
+        token = std::strtok(NULL, " ");
+        ++i;
+    }
+    this->csv_create(arr, fd);
 }

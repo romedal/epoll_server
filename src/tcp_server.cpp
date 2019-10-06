@@ -6,7 +6,6 @@
 // Description : TCP server C++, Ansi-style
 //============================================================================
 
-#include <iostream>
 #include "../inc/Server.hpp"
 
 using namespace std;

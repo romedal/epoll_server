@@ -13,7 +13,6 @@
 
 using namespace std;
 
-#include <iostream>
 #include <unistd.h>    // for close()
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -25,9 +24,11 @@ using namespace std;
 #include <sys/epoll.h>
 #include <netdb.h>
 #include <errno.h>
-#include <fstream>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <cstring>
+#include "csv.hpp"
 
 class Server {
 private:
@@ -50,12 +51,14 @@ public:
 	bool set_multiplex();
 	void start_multiplex();
 
-	bool csv_create();
-	bool sort_csv();
+	bool csv_create(char** arr, int fd);
+	bool csv_create(int c1, float c2, int c3, int fd);
+	bool sort_csv(int fd);
 
 private:
 	void process_new_data(int fd);
 	void accept_and_add_new();
+	void split1(char* input, int fd);
 
 };
 
