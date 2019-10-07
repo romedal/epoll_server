@@ -12,13 +12,7 @@ using namespace std;
 
 int main() {
 	Server* srv = new Server();
-	srv->create_server();
-	srv->make_socket_non_blocking(srv->socket_fd);
-	srv->start_listen();
-	srv->create_multiplex();
-	srv->set_multiplex();
-	srv->start_multiplex();
-
+	srv->make_foo_func_threads();
 	delete srv;
 	return 0;
 }

@@ -28,6 +28,7 @@ using namespace std;
 #include <vector>
 #include <algorithm>
 #include <cstring>
+#include <thread>
 #include "Csv.hpp"
 
 
@@ -49,6 +50,7 @@ private:
 	size_t bytes_read;
 	struct epoll_event event, events[MAXEVENTS];
 	int numPeers, numPacks;
+	std::vector<std::thread> some_threads;
 
 public:
 	Server();
@@ -65,6 +67,9 @@ public:
 	int getPackNum();
 	void setPeerNum(op);
 	void setPackNum(op);
+	void updateInfo();
+	void make_foo_func_threads();
+	void prepareServer();
 
 private:
 	void process_new_data(int fd);

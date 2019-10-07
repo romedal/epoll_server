@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <map>
 #include <cstdlib>
+#include <thread>
 
 Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}, numPeers{0}, numPacks{0}
 {
@@ -24,6 +25,7 @@ Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, b
 	memset(read_buffer, 0x00, sizeof(read_buffer));
 	event.events = EPOLLIN;
 	event.data.fd = 0;
+//	make_foo_func_threads();
 }
 
 Server::~Server()
@@ -89,8 +91,6 @@ bool Server::set_multiplex()
 void Server::start_multiplex()
 {
 	while(running) {
-//		sleep(1);
-//		cout<<"Peers number: "<<getPeerNum()<<"Packet number: "<<getPackNum()<<"\r"<<std::flush;
 		int n, i;
 		n = epoll_wait(epoll_fd, events, MAXEVENTS, -1);
 		for (i = 0; i < n; i++) {
@@ -178,7 +178,8 @@ int Server::start_listen()
 		exit(1);
 	}
 	else {
-		cout<<"TCPServer Waiting for client on port 5000\r"<<std::flush;
+		cout<<"TCPServer Waiting for client on port 5000\n"<<std::flush;
+//		make_foo_func_threads();
 	}
 
 	return 0;
@@ -204,7 +205,7 @@ void Server::process_new_data(int fd)
 		this->setPackNum(INC);
 		split1(buf, fd);
 	}
-	printf("Close connection on descriptor: %d\n", fd);
+//	printf("Close connection on descriptor: %d\n", fd);
 	this->setPeerNum(DEC);
 	csvTool->sort_csv(fd);
 	close(fd);
@@ -221,7 +222,7 @@ void Server::accept_and_add_new()
 	while ((infd = accept(socket_fd, &in_addr, &in_len)) != -1) {
 
 		if (getnameinfo(&in_addr, in_len, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICHOST) == 0) {
-			printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", infd, hbuf, sbuf);
+//			printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", infd, hbuf, sbuf);
 			this->setPeerNum(INC);
 		}
 		if (!make_socket_non_blocking(infd)) {
@@ -286,3 +287,28 @@ void Server::setPackNum(op operation)
 		cerr<<"undefined operation"<<endl;
 	}
 }
+
+void Server::make_foo_func_threads()
+{
+	some_threads.push_back(std::thread(&Server::updateInfo, this));
+	some_threads.push_back(std::thread(&Server::prepareServer, this));
+	for (auto& t: some_threads) t.join();
+}
+
+void Server::prepareServer()
+{
+	this->create_server();
+	this->make_socket_non_blocking(this->socket_fd);
+	this->start_listen();
+	this->create_multiplex();
+	this->set_multiplex();
+	this->start_multiplex();
+}
+
+void Server::updateInfo(){
+	while(running){
+		sleep(1);
+		cout<<"Peers number: "<<getPeerNum()<<" Packet number: "<<getPackNum()<<"\r"<<std::flush;
+	}
+}
+
