@@ -1,5 +1,5 @@
 /*
- * csv.cpp
+ * Csv.cpp
  *
  *  Created on: Oct 6, 2019
  *      Author: romedal
@@ -10,35 +10,56 @@
 #include <vector>
 #include <tuple>
 #include <algorithm>
+#include <stdbool.h>
 
 Csv::Csv():csv_fd{0}
 {
+#ifdef DEBUG
 	cout<<"creating csv tool ..."<<endl;
+#endif
 }
 
 Csv::~Csv()
 {
+#ifdef DEBUG
 	cout<<"csv tool was destroyed"<<endl;
+#endif
 }
-void Csv::create_headers_csv(int fd, int sorted)
+
+bool Csv::create_headers_csv(int fd, int sorted)
 {
+	bool ret = true;
 	fstream fout;
 	char name[10];
-	if (sorted)
-		sprintf(name, "connection%d_sorted.csv", fd);
-	else
-		sprintf(name, "connection%d.csv", fd);
-    ifstream f(name);
-    if (!access(name, F_OK ))
-    {
-    	return;
-    }
-	fout.open(name, ios::out | ios::trunc);
 
-	fout <<"C1" << ","
-		 <<"C2" << ","
-		 <<"C3" << "\n";
-	fout.close();
+	do{
+		if (sorted){
+			if(sprintf(name, "connection%d_sorted.csv", fd) < 0){
+				ret = false;
+				break;
+			}
+		}
+		else{
+			if(sprintf(name, "connection%d.csv", fd) < 0){
+				ret = false;
+				break;
+			}
+		}
+
+		ifstream f(name);
+		if (!access(name, F_OK ))
+		{
+			break;
+		}
+		fout.open(name, ios::out | ios::trunc);
+
+		fout <<"C1" << ","
+				<<"C2" << ","
+				<<"C3" << "\n";
+		fout.close();
+	}while(false);
+
+	return ret;
 }
 
 bool Csv::sortbysec(const tuple<int, float, int>& a,
@@ -50,34 +71,52 @@ bool Csv::sortbysec(const tuple<int, float, int>& a,
 
 bool Csv::csv_create(char** arr, int fd)
 {
-	fstream fout;
-	char name[10];
-	sprintf(name, "connection%d.csv", fd);
+	bool ret = true;
 
-	fout.open(name, ios::out | ios::app);
-	fout <<arr[0] << ","
-		 <<arr[1] << ","
-		 <<arr[2] << ","
-		 <<"\n";
+	do{
+		fstream fout;
+		char name[10];
 
-	fout.close();
-	return 0;
+		if (sprintf(name, "connection%d.csv", fd) < 0){
+			ret = false;
+			break;
+		}
+
+		fout.open(name, ios::out | ios::app);
+		fout <<arr[0] << ","
+			 <<arr[1] << ","
+			 <<arr[2] << ","
+			 <<"\n";
+		fout.close();
+
+	}while(false);
+
+	return ret;
 }
 
 bool Csv::csv_create(int c1, float c2, int c3, int fd)
 {
-	fstream fout;
-	char name[10];
-	sprintf(name, "connection%d_sorted.csv", fd);
-	fout.open(name, ios::out | ios::app);
+	bool ret = true;
 
-	fout <<c1<< ","
-		 <<c2<< ","
-		 <<c3<< ","
-		 << "\n";
-	fout.close();
+	do{
+		fstream fout;
+		char name[10];
+
+		if (sprintf(name, "connection%d_sorted.csv", fd) < 0){
+			ret = false;
+			break;
+		}
+
+		fout.open(name, ios::out | ios::app);
+		fout <<c1<< ","
+			 <<c2<< ","
+			 <<c3<< ","
+			 << "\n";
+		fout.close();
+
+	}while(false);
+
 	return 0;
-
 }
 
 void Csv::sort_csv(int fd)
@@ -104,6 +143,7 @@ void Csv::sort_csv(int fd)
 				words.push_back(line);
 		}
 	}
+
 	for(auto it = words.begin(); it != words.end(); it++) {
 		orbits.assign(*it);
 		orbits.erase(std::remove(orbits.begin(), orbits.end(), '\n'), orbits.end());
@@ -135,8 +175,10 @@ void Csv::sort_csv(int fd)
 
 	this->create_headers_csv(fd, 1);
 	sort(wideVector.begin(), wideVector.end(), Csv::sortbysec);
+
 	for ( const auto& i : wideVector ) {
 		this->csv_create(get<0>(i), get<1>(i), get<2>(i), fd);
+
 #ifdef DEBUG
 		cout <<"Tuple:  "<< get<0>(i)<<"  "<< get<1>(i)<<"  "<< get<2>(i) << endl;
 #endif

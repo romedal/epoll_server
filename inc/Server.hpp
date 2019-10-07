@@ -30,29 +30,41 @@ using namespace std;
 #include <cstring>
 #include "Csv.hpp"
 
+
+typedef enum operation{
+	UND = 0,  //undef
+	INC = 1,  //increase value by 1
+	DEC = 2,  //decrease value by 1
+	LST = 3   //last
+} op;
+
 class Server {
 
 public:
 	int socket_fd;
 	Csv* csvTool;
 private:
-	int epoll_fd;
-	int event_count;
-	int running ,i;
-	struct epoll_event event, events[MAXEVENTS];
-	size_t bytes_read;
+	int epoll_fd, event_count, running, i;
 	char read_buffer[READ_SIZE + 1];
+	size_t bytes_read;
+	struct epoll_event event, events[MAXEVENTS];
+	int numPeers, numPacks;
 
 public:
 	Server();
 	virtual ~Server();
 	bool create_server();
-	int make_socket_non_blocking(int sfd);
+	bool make_socket_non_blocking(int sfd);
 	int start_listen();
 
 	bool create_multiplex();
 	bool set_multiplex();
 	void start_multiplex();
+
+	int getPeerNum();
+	int getPackNum();
+	void setPeerNum(op);
+	void setPackNum(op);
 
 private:
 	void process_new_data(int fd);

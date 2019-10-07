@@ -16,7 +16,7 @@
 #include <map>
 #include <cstdlib>
 
-Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}
+Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}, numPeers{0}, numPacks{0}
 {
 	csvTool = new Csv();
 	memset(&event, 0x00, sizeof(struct epoll_event));
@@ -28,55 +28,75 @@ Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, b
 
 Server::~Server()
 {
+#ifdef DEBUG
 	cout<<"server destroying ..."<<endl;
+#endif
+
 	if(close(epoll_fd))
 	{
-		fprintf(stderr, "Failed to close epoll file descriptor\n");
+		cerr<<"Failed to close epoll file descriptor"<<endl;
 	}
+delete csvTool;
+#ifdef DEBUG
 	cout<<"server was destroyed"<<endl;
+#endif
 }
 
 bool Server::create_multiplex()
 {
-	  epoll_fd = epoll_create1(0);
+	bool ret = true;
 
-	  if(epoll_fd == -1)
-	  {
-	    fprintf(stderr, "Failed to create epoll file descriptor\n");
-	    return EXIT_FAILURE;
-	  }
+	do{
+		epoll_fd = epoll_create1(0);
 
-	  return EXIT_SUCCESS;
+		if(epoll_fd == -1)
+		{
+			cerr<<"Failed to create epoll file descriptor"<<endl;
+			ret = false;
+			break;
+		}
+
+	}while(false);
+
+	return ret;
 }
 
 bool Server::set_multiplex()
 {
-	  if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, 0, &event))
-	  {
-	    fprintf(stderr, "Failed to add file descriptor to epoll\n");
-	    close(epoll_fd);
-	    return EXIT_FAILURE;
-	  }
+	bool ret = true;
 
-	  event.data.fd = socket_fd;
-	  event.events = EPOLLIN | EPOLLET;
-	  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1) {
-		  perror("epoll_ctl");
-		  exit(1);
-	  }
+	do{
+		if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, 0, &event))
+		{
+			cerr<<"Failed to add file descriptor to epoll"<<endl;
+			close(epoll_fd);
+			ret = false;
+			break;
+		}
 
-	  return EXIT_SUCCESS;
+		event.data.fd = socket_fd;
+		event.events = EPOLLIN | EPOLLET;
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1) {
+			cerr<<"epoll_ctl error"<<endl;
+			ret = false;
+			break;
+		}
+	}while(false);
+
+	return ret;
 }
 
 void Server::start_multiplex()
 {
 	while(running) {
+//		sleep(1);
+//		cout<<"Peers number: "<<getPeerNum()<<"Packet number: "<<getPackNum()<<"\r"<<std::flush;
 		int n, i;
 		n = epoll_wait(epoll_fd, events, MAXEVENTS, -1);
 		for (i = 0; i < n; i++) {
 			if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
 			    !(events[i].events & EPOLLIN)) {
-				perror("epoll error");
+				cerr<<"epoll error"<<endl;
 				close(events[i].data.fd);
 			} else if (events[i].data.fd == socket_fd) {
 				accept_and_add_new();
@@ -91,49 +111,64 @@ void Server::start_multiplex()
 bool Server::create_server()
 {
 	struct sockaddr_in server_addr;
-	int opt = 1;
-	int ret = 0;
+	int opt = 1, retBind = 0;
+	bool ret = true;
 
-	if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		perror("Socket errro");
-		exit(1);
-	}
+	do{
 
-	if (setsockopt(socket_fd,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(int)) == -1) {
-		perror("Setsockopt errro");
-		exit(1);
-	}
+		if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+			cerr<<"Socket errro"<<endl;
+			ret = false;
+			break;
+		}
 
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(5000);
-	server_addr.sin_addr.s_addr = INADDR_ANY;
-	bzero(&(server_addr.sin_zero),8);
-	ret = bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr));
-	if (ret	== -1) {
-		perror("Unable to bind");
-		exit(1);
-	}
+		if (setsockopt(socket_fd,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(int)) == -1) {
+			cerr<<"Setsockopt errro"<<endl;
+			ret = false;
+			break;
+		}
 
-	return EXIT_SUCCESS;
+		server_addr.sin_family = AF_INET;
+		server_addr.sin_port = htons(5000);
+		server_addr.sin_addr.s_addr = INADDR_ANY;
+		bzero(&(server_addr.sin_zero),8);
+		retBind = bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr));
+
+		if (retBind == -1) {
+			cerr<<"Unable to bind"<<endl;
+			ret = false;
+			break;
+		}
+
+	}while(false);
+
+	return ret;
 }
 
-int Server::make_socket_non_blocking(int sfd)
+bool Server::make_socket_non_blocking(int sfd)
 {
 	int flags;
+	bool ret = true;
 
-	flags = fcntl(sfd, F_GETFL, 0);
-	if (flags == -1) {
-		perror("fcntl");
-		return -1;
-	}
+	do{
 
-	flags |= O_NONBLOCK;
-	if (fcntl(sfd, F_SETFL, flags) == -1) {
-		perror("fcntl error");
-		return -1;
-	}
+		flags = fcntl(sfd, F_GETFL, 0);
+		if (flags == -1) {
+			cerr<<"fcntl get errro"<<endl;
+			ret = false;
+			break;
+		}
 
-	return 0;
+		flags |= O_NONBLOCK;
+		if (fcntl(sfd, F_SETFL, flags) == -1) {
+			cerr<<"fcntl set error"<<endl;
+			ret = false;
+			break;
+		}
+
+	}while(false);
+
+	return ret;
 }
 
 int Server::start_listen()
@@ -143,8 +178,7 @@ int Server::start_listen()
 		exit(1);
 	}
 	else {
-		printf("\nTCPServer Waiting for client on port 5000\n");
-		fflush(stdout);
+		cout<<"TCPServer Waiting for client on port 5000\r"<<std::flush;
 	}
 
 	return 0;
@@ -167,9 +201,11 @@ void Server::process_new_data(int fd)
 
 		buf[count] = '\0';
 		str.assign(buf);
+		this->setPackNum(INC);
 		split1(buf, fd);
 	}
 	printf("Close connection on descriptor: %d\n", fd);
+	this->setPeerNum(DEC);
 	csvTool->sort_csv(fd);
 	close(fd);
 }
@@ -186,8 +222,9 @@ void Server::accept_and_add_new()
 
 		if (getnameinfo(&in_addr, in_len, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICHOST) == 0) {
 			printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", infd, hbuf, sbuf);
+			this->setPeerNum(INC);
 		}
-		if (make_socket_non_blocking(infd) == -1) {
+		if (!make_socket_non_blocking(infd)) {
 			abort();
 		}
 
@@ -216,4 +253,36 @@ void Server::split1(char* input, int fd)
         ++i;
     }
     csvTool->csv_create(arr, fd);
+}
+
+int Server::getPeerNum()
+{
+	return this->numPeers;
+}
+
+int Server::getPackNum()
+{
+	return this->numPacks;
+}
+
+void Server::setPeerNum(op operation)
+{
+	if (operation == INC){
+		++(this->numPeers);
+	}else if(operation == DEC){
+		--(this->numPeers);
+	}else{
+		cerr<<"undefined operation"<<endl;
+	}
+}
+
+void Server::setPackNum(op operation)
+{
+	if (operation == INC){
+		++(this->numPacks);
+	}else if(operation == DEC){
+		--(this->numPacks);
+	}else{
+		cerr<<"undefined operation"<<endl;
+	}
 }
