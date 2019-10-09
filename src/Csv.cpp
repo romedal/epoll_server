@@ -116,7 +116,7 @@ bool Csv::csv_create(int c1, float c2, int c3, int fd)
 
 	}while(false);
 
-	return 0;
+	return ret;
 }
 
 void Csv::sort_csv(int fd)

@@ -32,6 +32,8 @@ using namespace std;
 #include "Csv.hpp"
 #include <mutex>
 
+
+
 typedef enum operation{
 	UND = 0,  //undef
 	INC = 1,  //increase value by 1
@@ -39,7 +41,7 @@ typedef enum operation{
 	LST = 3   //last
 } op;
 
-std::mutex mtx;
+
 
 class Server {
 

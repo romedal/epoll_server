@@ -18,6 +18,8 @@
 #include <thread>
 
 
+std::mutex mtx;
+
 Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}, numPeers{0}, numPacks{0}
 {
 	csvTool = new Csv();
@@ -267,6 +269,7 @@ int Server::getPeerNum()
 	mtx.lock();
 	ret = this->numPeers;
 	mtx.unlock();
+
 	return ret;
 }
 
@@ -276,6 +279,7 @@ int Server::getPackNum()
 	mtx.lock();
 	ret = this->numPacks;
 	mtx.unlock();
+
 	return ret;
 }
 
@@ -328,8 +332,9 @@ void Server::prepareServer()
 
 void Server::updateInfo(){
 	while(running){
-		sleep(1);
 		cout<<"Peers number: "<<getPeerNum()<<" Packet number: "<<getPackNum()<<"\r"<<std::flush;
+		sleep(1);
+		cout<<std::flush;
 	}
 }
 

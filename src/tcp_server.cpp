@@ -10,6 +10,7 @@
 
 using namespace std;
 
+
 int main() {
 	Server* srv = new Server();
 	srv->make_foo_func_threads();
