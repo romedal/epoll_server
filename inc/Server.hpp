@@ -30,7 +30,7 @@ using namespace std;
 #include <cstring>
 #include <thread>
 #include "Csv.hpp"
-
+#include <mutex>
 
 typedef enum operation{
 	UND = 0,  //undef
@@ -38,6 +38,8 @@ typedef enum operation{
 	DEC = 2,  //decrease value by 1
 	LST = 3   //last
 } op;
+
+std::mutex mtx;
 
 class Server {
 

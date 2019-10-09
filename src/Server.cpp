@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <thread>
 
+
 Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}, numPeers{0}, numPacks{0}
 {
 	csvTool = new Csv();
@@ -30,6 +31,7 @@ Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, b
 
 Server::~Server()
 {
+
 #ifdef DEBUG
 	cout<<"server destroying ..."<<endl;
 #endif
@@ -38,10 +40,13 @@ Server::~Server()
 	{
 		cerr<<"Failed to close epoll file descriptor"<<endl;
 	}
-delete csvTool;
+
+	delete this->csvTool;
+
 #ifdef DEBUG
 	cout<<"server was destroyed"<<endl;
 #endif
+
 }
 
 bool Server::create_multiplex()
@@ -174,7 +179,7 @@ bool Server::make_socket_non_blocking(int sfd)
 int Server::start_listen()
 {
 	if (listen(socket_fd, 5) == -1) {
-		perror("Listen error");
+		cerr<<"Listen error"<<endl;
 		exit(1);
 	}
 	else {
@@ -196,7 +201,7 @@ void Server::process_new_data(int fd)
 			if (errno == EAGAIN)
 				return;
 
-			perror("read error");
+			cerr<<"read error"<<endl;
 			break;
 		}
 
@@ -205,7 +210,7 @@ void Server::process_new_data(int fd)
 		this->setPackNum(INC);
 		split1(buf, fd);
 	}
-//	printf("Close connection on descriptor: %d\n", fd);
+//	cout<<"Close connection on descriptor: "<<endl;
 	this->setPeerNum(DEC);
 	csvTool->sort_csv(fd);
 	close(fd);
@@ -222,7 +227,7 @@ void Server::accept_and_add_new()
 	while ((infd = accept(socket_fd, &in_addr, &in_len)) != -1) {
 
 		if (getnameinfo(&in_addr, in_len, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICHOST) == 0) {
-//			printf("Accepted connection on descriptor %d (host=%s, port=%s)\n", infd, hbuf, sbuf);
+//			cout<<"Accepted connection on descriptor "<< infd<< "(host = "<< hbuf<< "port = " << sbuf <<endl;
 			this->setPeerNum(INC);
 		}
 		if (!make_socket_non_blocking(infd)) {
@@ -232,14 +237,14 @@ void Server::accept_and_add_new()
 		event.data.fd = infd;
 		event.events = EPOLLIN | EPOLLET;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, infd, &event) == -1) {
-			perror("epoll_ctl");
+			cerr<<"epoll_ctl"<<endl;
 			abort();
 		}
 		in_len = sizeof(in_addr);
 	}
 
 	if (errno != EAGAIN && errno != EWOULDBLOCK)
-		perror("accept error");
+		cerr<<"accept error"<<endl;
 }
 
 void Server::split1(char* input, int fd)
@@ -258,20 +263,32 @@ void Server::split1(char* input, int fd)
 
 int Server::getPeerNum()
 {
-	return this->numPeers;
+	int ret = 0;
+	mtx.lock();
+	ret = this->numPeers;
+	mtx.unlock();
+	return ret;
 }
 
 int Server::getPackNum()
 {
-	return this->numPacks;
+	int ret = 0;
+	mtx.lock();
+	ret = this->numPacks;
+	mtx.unlock();
+	return ret;
 }
 
 void Server::setPeerNum(op operation)
 {
 	if (operation == INC){
+		 mtx.lock();
 		++(this->numPeers);
+		 mtx.unlock();
 	}else if(operation == DEC){
+		 mtx.lock();
 		--(this->numPeers);
+		 mtx.unlock();
 	}else{
 		cerr<<"undefined operation"<<endl;
 	}
@@ -280,9 +297,13 @@ void Server::setPeerNum(op operation)
 void Server::setPackNum(op operation)
 {
 	if (operation == INC){
+		 mtx.lock();
 		++(this->numPacks);
+		 mtx.unlock();
 	}else if(operation == DEC){
+		 mtx.lock();
 		--(this->numPacks);
+		 mtx.unlock();
 	}else{
 		cerr<<"undefined operation"<<endl;
 	}
