@@ -332,8 +332,9 @@ void Server::prepareServer()
 
 void Server::updateInfo(){
 	while(running){
-		cout<<"Peers number: "<<getPeerNum()<<" Packet number: "<<getPackNum()<<"\r"<<std::flush;
+		cout<<"Peers number: "<<getPeerNum()<<" Packet number: "<<getPackNum()<<" \r"<<std::flush;
 		sleep(1);
+		cout<<"";
 		cout<<std::flush;
 	}
 }
