@@ -28,7 +28,6 @@ Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, b
 	memset(read_buffer, 0x00, sizeof(read_buffer));
 	event.events = EPOLLIN;
 	event.data.fd = 0;
-//	make_foo_func_threads();
 }
 
 Server::~Server()
@@ -186,7 +185,6 @@ int Server::start_listen()
 	}
 	else {
 		cout<<"TCPServer Waiting for client on port 5000\n"<<std::flush;
-//		make_foo_func_threads();
 	}
 
 	return 0;
