@@ -7,13 +7,13 @@
 //============================================================================
 
 #include "../inc/Server.hpp"
+#include <memory>
 
 using namespace std;
 
 
 int main() {
-	Server* srv = new Server();
-	srv->make_foo_func_threads();
-	delete srv;
+	std::unique_ptr<Server> p2(new Server());
+	p2->make_foo_func_threads();
 	return 0;
 }
