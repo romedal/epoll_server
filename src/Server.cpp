@@ -16,6 +16,7 @@
 #include <map>
 #include <cstdlib>
 #include <thread>
+#include <iomanip>
 
 
 std::mutex mtx;
@@ -184,7 +185,7 @@ int Server::start_listen()
 		exit(1);
 	}
 	else {
-		cout<<"TCPServer Waiting for client on port 5000\n"<<std::flush;
+		cout<<"TCPServer Waiting for client on port 5000"<<std::endl<<std::flush;
 	}
 
 	return 0;
@@ -274,6 +275,7 @@ int Server::getPeerNum()
 int Server::getPackNum()
 {
 	int ret = 0;
+
 	mtx.lock();
 	ret = this->numPacks;
 	mtx.unlock();
@@ -284,30 +286,42 @@ int Server::getPackNum()
 void Server::setPeerNum(op operation)
 {
 	if (operation == INC){
+
 		 mtx.lock();
 		++(this->numPeers);
 		 mtx.unlock();
+
 	}else if(operation == DEC){
-		 mtx.lock();
+
+		mtx.lock();
 		--(this->numPeers);
-		 mtx.unlock();
+		mtx.unlock();
+
 	}else{
+
 		cerr<<"undefined operation"<<endl;
+
 	}
 }
 
 void Server::setPackNum(op operation)
 {
 	if (operation == INC){
-		 mtx.lock();
+
+		mtx.lock();
 		++(this->numPacks);
-		 mtx.unlock();
+		mtx.unlock();
+
 	}else if(operation == DEC){
-		 mtx.lock();
+
+		mtx.lock();
 		--(this->numPacks);
-		 mtx.unlock();
+		mtx.unlock();
+
 	}else{
+
 		cerr<<"undefined operation"<<endl;
+
 	}
 }
 
@@ -330,10 +344,12 @@ void Server::prepareServer()
 
 void Server::updateInfo(){
 	while(running){
-		cout<<"Peers number: "<<getPeerNum()<<" Packet number: "<<getPackNum()<<" \r"<<std::flush;
+
+		cout<<setfill(' ');
+		cout<<std::setw(80)<<" "<<" \r";
+		cout<<std::setw(25)<<""<<std::flush<<"Peers number: "<<this->getPeerNum()<<" Packet number: "<<this->getPackNum()<<" \r"<<std::flush;
 		sleep(1);
-		cout<<"";
-		cout<<std::flush;
+
 	}
 }
 

@@ -59,16 +59,17 @@ private:
 public:
 	Server();
 	virtual ~Server();
+
 	bool create_server();
 	bool make_socket_non_blocking(int sfd);
-	int start_listen();
-
 	bool create_multiplex();
 	bool set_multiplex();
-	void start_multiplex();
 
+	int start_listen();
 	int getPeerNum();
 	int getPackNum();
+
+	void start_multiplex();
 	void setPeerNum(op);
 	void setPackNum(op);
 	void updateInfo();
