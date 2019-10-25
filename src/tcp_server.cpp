@@ -15,7 +15,7 @@ int main() {
 
 	{
 		std::unique_ptr<Server> ePollServer(new Server());
-		ePollServer->make_foo_func_threads();
+		ePollServer->make_threads();
 	}
 
 	return 0;

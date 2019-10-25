@@ -185,6 +185,7 @@ int Server::start_listen()
 		exit(1);
 	}
 	else {
+		cout<<left;
 		cout<<"TCPServer Waiting for client on port 5000"<<std::endl<<std::flush;
 	}
 
@@ -325,7 +326,7 @@ void Server::setPackNum(op operation)
 	}
 }
 
-void Server::make_foo_func_threads()
+void Server::make_threads()
 {
 	some_threads.push_back(std::thread(&Server::updateInfo, this));
 	some_threads.push_back(std::thread(&Server::prepareServer, this));

@@ -73,7 +73,7 @@ public:
 	void setPeerNum(op);
 	void setPackNum(op);
 	void updateInfo();
-	void make_foo_func_threads();
+	void make_threads();
 	void prepareServer();
 
 private:
