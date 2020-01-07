@@ -4,7 +4,7 @@
  *  Created on: Oct 6, 2019
  *      Author: romedal
  */
-#include "../inc/Csv.hpp"
+#include "Csv.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
