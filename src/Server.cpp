@@ -24,9 +24,11 @@ std::mutex mtx;
 Server::Server(): socket_fd{0}, epoll_fd{0}, event_count{0}, running{1}, i{0}, bytes_read{0}, numPeers{0}, numPacks{0}
 {
 	csvTool = new Csv();
+	
 	memset(&event, 0x00, sizeof(struct epoll_event));
 	memset(events, 0x00, sizeof(events));
 	memset(read_buffer, 0x00, sizeof(read_buffer));
+	
 	event.events = EPOLLIN;
 	event.data.fd = 0;
 }
@@ -38,7 +40,7 @@ Server::~Server()
 	cout<<"server destroying ..."<<endl;
 #endif
 
-	if(close(epoll_fd))
+	if (close(epoll_fd))
 	{
 		cerr<<"Failed to close epoll file descriptor"<<endl;
 	}
@@ -85,11 +87,13 @@ bool Server::set_multiplex()
 
 		event.data.fd = socket_fd;
 		event.events = EPOLLIN | EPOLLET;
+		
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) == -1) {
 			cerr<<"epoll_ctl error"<<endl;
 			ret = false;
 			break;
 		}
+		
 	}while(false);
 
 	return ret;
@@ -98,8 +102,10 @@ bool Server::set_multiplex()
 void Server::start_multiplex()
 {
 	while(running) {
+		
 		int n, i;
 		n = epoll_wait(epoll_fd, events, MAXEVENTS, -1);
+		
 		for (i = 0; i < n; i++) {
 			if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
 			    !(events[i].events & EPOLLIN)) {
@@ -139,6 +145,7 @@ bool Server::create_server()
 		server_addr.sin_port = htons(5000);
 		server_addr.sin_addr.s_addr = INADDR_ANY;
 		bzero(&(server_addr.sin_zero),8);
+		
 		retBind = bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr));
 
 		if (retBind == -1) {
@@ -160,6 +167,7 @@ bool Server::make_socket_non_blocking(int sfd)
 	do{
 
 		flags = fcntl(sfd, F_GETFL, 0);
+		
 		if (flags == -1) {
 			cerr<<"fcntl get errro"<<endl;
 			ret = false;
@@ -167,6 +175,7 @@ bool Server::make_socket_non_blocking(int sfd)
 		}
 
 		flags |= O_NONBLOCK;
+		
 		if (fcntl(sfd, F_SETFL, flags) == -1) {
 			cerr<<"fcntl set error"<<endl;
 			ret = false;
@@ -232,16 +241,19 @@ void Server::accept_and_add_new()
 //			cout<<"Accepted connection on descriptor "<< infd<< "(host = "<< hbuf<< "port = " << sbuf <<endl;
 			this->setPeerNum(INC);
 		}
+		
 		if (!make_socket_non_blocking(infd)) {
 			abort();
 		}
 
 		event.data.fd = infd;
 		event.events = EPOLLIN | EPOLLET;
+		
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, infd, &event) == -1) {
 			cerr<<"epoll_ctl"<<endl;
 			abort();
 		}
+		
 		in_len = sizeof(in_addr);
 	}
 
@@ -253,19 +265,21 @@ void Server::split1(char* input, int fd)
 {
     char* arr[3]={0};
     int i = 0;
-	char *token = std::strtok(input, " ");
+    char *token = std::strtok(input, " ");
 
     while (token != NULL) {
         arr[i]=token;
         token = std::strtok(NULL, " ");
         ++i;
     }
+	
     csvTool->csv_create(arr, fd);
 }
 
 int Server::getPeerNum()
 {
 	int ret = 0;
+	
 	mtx.lock();
 	ret = this->numPeers;
 	mtx.unlock();
