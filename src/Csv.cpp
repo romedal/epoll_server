@@ -30,7 +30,7 @@ bool Csv::create_headers_csv(int fd, int sorted)
 {
 	bool ret = true;
 	fstream fout;
-	char name[10];
+	char name[25];
 
 	do{
 		if (sorted){
@@ -75,7 +75,7 @@ bool Csv::csv_create(char** arr, int fd)
 
 	do{
 		fstream fout;
-		char name[10];
+		char name[25];
 
 		if (sprintf(name, "connection%d.csv", fd) < 0){
 			ret = false;
@@ -100,7 +100,7 @@ bool Csv::csv_create(int c1, float c2, int c3, int fd)
 
 	do{
 		fstream fout;
-		char name[10];
+		char name[25];
 
 		if (sprintf(name, "connection%d_sorted.csv", fd) < 0){
 			ret = false;
@@ -123,7 +123,7 @@ void Csv::sort_csv(int fd)
 {
 	float C2=0;
 	int rowNum = 1, C3 = 0, C1 = 0;;
-	char name[10] = {0}, delim =',';
+	char name[25] = {0}, delim =',';
 	std::string orbits="";
 	fstream fin;
 	vector<string> row, words;
